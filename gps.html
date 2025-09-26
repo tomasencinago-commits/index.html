@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>GPS en tiempo real</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h2 style="text-align:center;">Ubicación en tiempo real 🚗</h2>
+  <div id="map"></div>
+
+  <!-- Firebase -->
+  <script type="module">
+    // Importar Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-database.js";
+
+    // Configuración de Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCyfGBZbXQ300lQTOY7X0c6-GaM_70bTUY",
+      authDomain: "alarma-de-auto.firebaseapp.com",
+      databaseURL: "https://alarma-de-auto-default-rtdb.firebaseio.com/",
+      projectId: "alarma-de-auto",
+      storageBucket: "alarma-de-auto.appspot.com",
+      messagingSenderId: "1952936811",
+      appId: "1:1952936811:web:6d67bea681b59e984b522e",
+      measurementId: "G-CKPQMYZ1MQ"
+    };
+
+    // Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Inicializar Leaflet
+    const map = L.map('map').setView([-34.60, -58.38], 12); // arranca en Buenos Aires
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let marker = null;
+
+    // Escuchar cambios en la base de datos
+    const gpsRef = ref(db, "GPS");
+    onValue(gpsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const lat = data.lat;
+        const lng = data.lng;
+
+        if (marker) {
+          marker.setLatLng([lat, lng]);
+        } else {
+          marker = L.marker([lat, lng]).addTo(map);
+        }
+        map.setView([lat, lng], 15);
+      }
+    });
+  </script>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</body>
+</html>
