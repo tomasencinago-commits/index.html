@@ -1,69 +1,79 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>GPS en tiempo real</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa GPS en Tiempo Real</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    #map {
-      height: 100vh;
-      width: 100%;
+    body, html { margin: 0; padding: 0; height: 100%; }
+    #map { width: 100%; height: 100vh; }
+    .coords {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.8);
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-family: sans-serif;
+      z-index: 1000;
     }
   </style>
 </head>
 <body>
-  <h2 style="text-align:center;">Ubicación en tiempo real 🚗</h2>
-  <div id="map"></div>
 
-  <!-- Firebase -->
-  <script type="module">
-    // Importar Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-database.js";
+<div id="map"></div>
+<div class="coords" id="coords">Lat: -- , Lng: --</div>
 
-    // Configuración de Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyCyfGBZbXQ300lQTOY7X0c6-GaM_70bTUY",
-      authDomain: "alarma-de-auto.firebaseapp.com",
-      databaseURL: "https://alarma-de-auto-default-rtdb.firebaseio.com/",
-      projectId: "alarma-de-auto",
-      storageBucket: "alarma-de-auto.appspot.com",
-      messagingSenderId: "1952936811",
-      appId: "1:1952936811:web:6d67bea681b59e984b522e",
-      measurementId: "G-CKPQMYZ1MQ"
-    };
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Firebase -->
+<script type="module">
+  // Importa Firebase
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
 
-    // Inicializar Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+  // Configuración Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyCyfGBZbXQ300lQTOY7X0c6-GaM_70bTUY",
+    authDomain: "alarma-de-auto.firebaseapp.com",
+    databaseURL: "https://alarma-de-auto-default-rtdb.firebaseio.com",
+    projectId: "alarma-de-auto",
+    storageBucket: "alarma-de-auto.appspot.com",
+    messagingSenderId: "1952936811",
+    appId: "1:1952936811:web:6d67bea681b59e984b522e"
+  };
 
-    // Inicializar Leaflet
-    const map = L.map('map').setView([-34.60, -58.38], 12); // arranca en Buenos Aires
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-    let marker = null;
+  // Inicializa el mapa
+  const map = L.map('map').setView([-34.6037, -58.3816], 13); // posición inicial
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+  }).addTo(map);
 
-    // Escuchar cambios en la base de datos
-    const gpsRef = ref(db, "GPS");
-    onValue(gpsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const lat = data.lat;
-        const lng = data.lng;
+  // Marcador
+  const marker = L.marker([-34.6037, -58.3816]).addTo(map);
+  const coordsDiv = document.getElementById('coords');
 
-        if (marker) {
-          marker.setLatLng([lat, lng]);
-        } else {
-          marker = L.marker([lat, lng]).addTo(map);
-        }
-        map.setView([lat, lng], 15);
-      }
-    });
-  </script>
+  // Referencia a Firebase
+  const gpsRef = ref(db, 'GPS');
 
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  // Escucha cambios en tiempo real
+  onValue(gpsRef, (snapshot) => {
+    const data = snapshot.val();
+    if(data && data.lat && data.lng){
+      const lat = data.lat;
+      const lng = data.lng;
+      marker.setLatLng([lat, lng]);
+      map.setView([lat, lng], map.getZoom()); // mantiene el zoom actual
+      coordsDiv.textContent = `Lat: ${lat.toFixed(6)} , Lng: ${lng.toFixed(6)}`;
+    }
+  });
+
+</script>
+
 </body>
 </html>
