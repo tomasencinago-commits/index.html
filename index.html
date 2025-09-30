@@ -3,9 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mapa GPS en Tiempo Real</title>
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <title>Mapa GPS en Tiempo Real - Google Maps</title>
   <style>
     body, html { margin: 0; padding: 0; height: 100%; }
     #map { width: 100%; height: 100vh; }
@@ -26,9 +24,6 @@
 <div id="map"></div>
 <div class="coords" id="coords">Lat: -- , Lng: --</div>
 
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<!-- Firebase -->
 <script type="module">
   // Importa Firebase
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
@@ -48,32 +43,42 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  // Inicializa el mapa
-  const map = L.map('map').setView([-34.6037, -58.3816], 13); // posición inicial
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-  }).addTo(map);
-
-  // Marcador
-  const marker = L.marker([-34.6037, -58.3816]).addTo(map);
   const coordsDiv = document.getElementById('coords');
 
-  // Referencia a Firebase
-  const gpsRef = ref(db, 'GPS');
+  // Inicializa el mapa cuando se cargue Google Maps
+  window.initMap = function() {
+    const initialPos = { lat: -34.6037, lng: -58.3816 };
 
-  // Escucha cambios en tiempo real
-  onValue(gpsRef, (snapshot) => {
-    const data = snapshot.val();
-    if(data && data.lat && data.lng){
-      const lat = data.lat;
-      const lng = data.lng;
-      marker.setLatLng([lat, lng]);
-      map.setView([lat, lng], map.getZoom()); // mantiene el zoom actual
-      coordsDiv.textContent = `Lat: ${lat.toFixed(6)} , Lng: ${lng.toFixed(6)}`;
-    }
-  });
+    const map = new google.maps.Map(document.getElementById("map"), {
+      center: initialPos,
+      zoom: 13
+    });
 
+    const marker = new google.maps.Marker({
+      position: initialPos,
+      map: map
+    });
+
+    // Referencia a Firebase
+    const gpsRef = ref(db, 'GPS');
+
+    // Escucha cambios en tiempo real
+    onValue(gpsRef, (snapshot) => {
+      const data = snapshot.val();
+      if(data && data.lat && data.lng){
+        const lat = data.lat;
+        const lng = data.lng;
+        const newPos = { lat, lng };
+        marker.setPosition(newPos);
+        map.panTo(newPos); // mueve suavemente el mapa
+        coordsDiv.textContent = `Lat: ${lat.toFixed(6)} , Lng: ${lng.toFixed(6)}`;
+      }
+    });
+  }
 </script>
+
+<!-- Google Maps JS con tu API Key -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAkWleN9iaBaVU98jQgrvK77AievR3k16k&callback=initMap" async defer></script>
 
 </body>
 </html>
